@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:foodie/app/modules/otp/otp_view.dart';
 import 'package:foodie/app/src/app_colors.dart';
 
+import '../../data/remote/api_client.dart';
 import '../../src/app_spacings.dart';
 
 class MenuView extends StatefulWidget {
@@ -15,7 +17,46 @@ class MenuView extends StatefulWidget {
 class _MenuViewState extends State<MenuView> {
   final TextEditingController _phoneController = TextEditingController();
   String? _errorMessage;
+  String? _apiErrorMessage;
+
   bool _isEnableContinue = false;
+  late ApiClient _apiClient;
+  List<Category> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final dio = Dio();
+    dio.interceptors.add(
+        LogInterceptor(requestBody: true, responseBody: true)); // Add logging
+    _apiClient =
+        ApiClient(dio, baseUrl: "https://www.themealdb.com/api/json/v1/1/");
+
+    _apiClient = ApiClient(dio);
+    _fetchCategories();
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final response = await _apiClient.getCategories();
+      print("object$response");
+      setState(() {
+        _categories = response.categories;
+        print("object:$_categories");
+      });
+    } catch (e) {
+      setState(() {
+        _apiErrorMessage = "Failed to load categories: ${e.toString()}";
+        print("$_apiErrorMessage");
+      });
+    }
+  }
 
   void _validatePhoneNumber() {
     String phoneNumber = _phoneController.text;
@@ -27,6 +68,7 @@ class _MenuViewState extends State<MenuView> {
         _errorMessage = null;
         _isEnableContinue = true;
       } else {
+        _isEnableContinue = false;
         _errorMessage = 'Please enter a phone number';
       }
     });
@@ -159,112 +201,126 @@ class _MenuViewState extends State<MenuView> {
                             showDialog(
                                 context: context,
                                 builder: (context) {
-                                  return Dialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: SizedBox(
-                                      width: 238,
-                                      height: 295,
-                                      child: Stack(
-                                        children: [
-                                          Positioned(
-                                            top: 4,
-                                            right: 4,
-                                            child: IconButton(
-                                              icon: SvgPicture.asset(
-                                                'assets/icons/icon_circle_close.svg',
-                                                width: 32,
-                                                height: 32,
-                                              ),
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                              },
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: AppSpacing.l),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                const Text(
-                                                  "Phone Number",
-                                                  style: TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w600),
-                                                ),
-                                                TextFormField(
-                                                  controller: _phoneController,
-                                                  onChanged: (value) {
-                                                    _validatePhoneNumber();
-                                                  },
-                                                  keyboardType:
-                                                      TextInputType.phone,
-                                                  decoration: InputDecoration(
-                                                    errorText: _errorMessage,
-                                                    hintText: "Phone",
-                                                    prefixIcon: Padding(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical:
-                                                              AppSpacing.xs,
-                                                          horizontal:
-                                                              AppSpacing.l),
-                                                      child: SvgPicture.asset(
-                                                        "assets/icons/icon_phone.svg",
-                                                        width: 20,
-                                                        height: 20,
-                                                      ),
-                                                    ),
-                                                    border:
-                                                        const OutlineInputBorder(
-                                                      borderSide: BorderSide(
-                                                          color: AppColors
-                                                              .strokeColor),
-                                                      borderRadius:
-                                                          BorderRadius.all(
-                                                        Radius.circular(2),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                ElevatedButton(
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        _isEnableContinue
-                                                            ? AppColors.redColor
-                                                            : AppColors
-                                                                .strokeColor,
-                                                  ),
-                                                  onPressed: _isEnableContinue
-                                                      ? () {
-                                                          Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(
-                                                                builder:
-                                                                    (context) =>
-                                                                        OtpView()),
-                                                          );
-                                                        }
-                                                      : null,
-                                                  child: const Text(
-                                                    "CONTINUE",
-                                                    style: TextStyle(
-                                                        color: AppColors
-                                                            .whiteColor),
-                                                  ),
-                                                )
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                                  return StatefulBuilder(
+                                      builder: (context, state) {
+                                    return Dialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                    ),
-                                  );
+                                      child: SizedBox(
+                                        width: 238,
+                                        height: 295,
+                                        child: Stack(
+                                          children: [
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: IconButton(
+                                                icon: SvgPicture.asset(
+                                                  'assets/icons/icon_circle_close.svg',
+                                                  width: 32,
+                                                  height: 32,
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: AppSpacing.l),
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  const Text(
+                                                    "Phone Number",
+                                                    style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.w600),
+                                                  ),
+                                                  TextFormField(
+                                                    controller:
+                                                        _phoneController,
+                                                    onChanged: (value) {
+                                                      _validatePhoneNumber();
+                                                      setState(() {});
+                                                    },
+                                                    keyboardType:
+                                                        TextInputType.phone,
+                                                    decoration: InputDecoration(
+                                                      errorText: _errorMessage,
+                                                      hintText: "Phone",
+                                                      prefixIcon: Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical:
+                                                                    AppSpacing
+                                                                        .xs,
+                                                                horizontal:
+                                                                    AppSpacing
+                                                                        .l),
+                                                        child: SvgPicture.asset(
+                                                          "assets/icons/icon_phone.svg",
+                                                          width: 20,
+                                                          height: 20,
+                                                        ),
+                                                      ),
+                                                      border:
+                                                          const OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                            color: AppColors
+                                                                .strokeColor),
+                                                        borderRadius:
+                                                            BorderRadius.all(
+                                                          Radius.circular(2),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          _isEnableContinue
+                                                              ? AppColors
+                                                                  .redColor
+                                                              : AppColors
+                                                                  .strokeColor,
+                                                    ),
+                                                    onPressed: _isEnableContinue
+                                                        ? () {
+                                                            Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                  builder:
+                                                                      (context) =>
+                                                                          OtpView(
+                                                                            phoneNumber:
+                                                                                _phoneController.text,
+                                                                          )),
+                                                            );
+                                                          }
+                                                        : null,
+                                                    child: const Text(
+                                                      "CONTINUE",
+                                                      style: TextStyle(
+                                                          color: AppColors
+                                                              .whiteColor),
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  });
                                 });
                           },
                           style: ElevatedButton.styleFrom(
