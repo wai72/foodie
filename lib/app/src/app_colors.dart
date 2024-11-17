@@ -19,6 +19,8 @@ class AppColors {
   // Custom Colors
   static const Color greenColor = Color(0xFF5CB83E);
   static const Color linkColor = Color(0xFF0042EC);
+  static const Color strokeColor = Color(0xFFE0E0E0);
+
 
   // Opacity Variations
   static const Color alertColor = Color(0x33FFD100); //with 20% opacity
